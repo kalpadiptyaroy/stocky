@@ -1,5 +1,8 @@
+const dotenv = require('dotenv')
 const axios = require("axios");
 const { Sequelize, DataTypes } = require('sequelize');
+
+dotenv.config();
 
 const baseUrl = "https://www.nseindia.com";
 let sequelize = null;
@@ -76,10 +79,10 @@ function buildRestUrlForSymbolAndTimeRange(symbol, fromDate, toDate) {
 }
 
 async function initializeDatabaseConnection() {
-    const database = 'stocks';
-    const username = 'kalpadiptya';
-    const password = 'root';
-    const host = 'localhost';
+    const database = process.env.STOCKY_POSTGRES_DATABASE;
+    const username = process.env.STOCKY_POSTGRES_USERNAME;
+    const password = process.env.STOCKY_POSTGRES_PASSWORD;
+    const host = process.env.STOCKY_POSTGRES_HOST;
 
     sequelize = new Sequelize(database, username, password, {
         host, dialect: 'postgres', logging: false
@@ -165,6 +168,7 @@ async function setupDatabaseAndCookies() {
 }
 
 async function main () {
+
     let fromYear = parseInt(process.argv[2]);
     const toYear = parseInt(process.argv[3]);
     const symbols = process.argv.slice(4);
