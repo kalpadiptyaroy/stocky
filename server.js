@@ -1,6 +1,7 @@
 const dotenv = require('dotenv')
 const axios = require("axios");
 const { Sequelize, DataTypes } = require('sequelize');
+const getCookies = require('./credentials/cookies');
 
 dotenv.config();
 
@@ -10,13 +11,8 @@ let cookies = null;
 
 async function preRequestGetCookies() {
     try {
-        const response = await axios.get('https://www.nseindia.com/', { 
-            headers: { 
-                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36 Edg/123.0.0.0'
-            }
-        });
-        cookies = response.headers['set-cookie'];
-        console.log('Setting Cookies from nseindia.com ... . .');
+        cookies = await getCookies(baseUrl);
+        console.log('Using Cookies Credentials fetched from: ', baseUrl);
     }
     catch(err) {
         console.log('Error Occured', err);

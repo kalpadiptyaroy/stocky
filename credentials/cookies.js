@@ -1,3 +1,5 @@
+const axios = require("axios");
+
 const USER_AGENT_ALL = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36 Edg/123.0.0.0'
 const USER_AGENT_MOZILLA = 'Mozilla/5.0 (X11; Linux x86_64)';
 const USER_AGENT_APPLE = 'AppleWebKit/537.36 (KHTML, like Gecko)';
@@ -13,12 +15,13 @@ async function getCookies(url) {
                 'User-Agent': USER_AGENT_ALL
             }
         });
-        cookies = response.headers['set-cookie'];
+        let cookies = response.headers['set-cookie'];
         console.log("Retrieved Cookies from: ", url);
         return cookies;
     }
     catch(err) {
         console.log('Error Occured', err);
+        throw new Error("Fetch cookies call failed");
     }
 }
 
