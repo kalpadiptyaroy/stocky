@@ -2,6 +2,7 @@ const dotenv = require('dotenv')
 const axios = require("axios");
 const { Sequelize, DataTypes } = require('sequelize');
 const getCookies = require('./credentials/cookies');
+const dataSource = require("./datasource/rest/source")
 
 dotenv.config();
 
@@ -16,56 +17,6 @@ async function preRequestGetCookies() {
     }
     catch(err) {
         console.log('Error Occured', err);
-    }
-}
-
-async function axiosRetryInterceptor(err) {
-    let config = err.config;
-
-    // config option do not exist or retry param is not set.
-    if (!config || !config?.retry) 
-        return Promise.reject(err);
-
-    // kepping track of retry count.
-    config.__retryCount = config.__retryCount || 0;
-
-    // check if we have made maximum no. of retries.
-    if (config.__retryCount >= config.retry) {
-        // Reject with the error
-        return Promise.reject(err);
-    }
-
-    // refreshing the cookies on retry
-    await preRequestGetCookies();
-
-    // increase the retry count.
-    config.__retryCount += 1;
-    console.log("Retry No: ", config.__retryCount);
-
-    // create new promise to handle exponential backoff
-    let backoff = new Promise((resolve) => setTimeout(() => resolve(), config.retryDelay || 1));
-
-    // Return the promise in which recalls axios to retry the request.
-    return backoff.then(() => axios(config));
-}
-
-async function getStockPrice(restUrl) {
-    axios.interceptors.response.use(undefined, axiosRetryInterceptor);
-    try {
-        const response = await axios.get(
-            restUrl,
-            {
-                retry: 3,
-                retryDelay: 12000, // 12 sec delay
-                headers: {
-                    'Cookie': cookies, 
-                    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36 Edg/123.0.0.0' 
-                }
-            });
-        return response.data.data;
-    }
-    catch (err) {
-        console.error(err);
     }
 }
 
@@ -124,12 +75,14 @@ async function setStockPriceInDB(symbol, fromDate, toDate) {
         mTIMESTAMP: DataTypes.DATE
     }, { schema: 'stocksdata'});
 
-    const priceList = await getStockPrice(restUrl);
+    const priceList = await dataSource.getStockPrice(restUrl, cookies);
+    console.log(priceList.length);
     try {
         const records = await Price.bulkCreate(priceList);
         console.log(records.length, ' records inserted!', `from date ${fromDate} to date ${toDate}`);
     }
     catch(err) {
+        console.error(err);
         if (err.errors[0].type === 'unique violation' && err.errors[0].path === '_id' && err.errors[0].validatorKey === 'not_unique')
             console.log('Duplicate Data Insert blocked: Dupicate field: ', err.errors[0].path, 'value: ', err.errors[0].value);
     }
